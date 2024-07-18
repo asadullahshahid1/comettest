@@ -6,7 +6,6 @@ on:
       - main
       - develop
       - staging
-      - qa
 
 jobs:
   create-config:
@@ -15,18 +14,16 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Set environment name
+    - name: Set environment based on branch
       run: |
         if [[ ${{ github.ref }} == 'refs/heads/main' ]]; then
-          echo "ENV_NAME=tkxelprod" >> $GITHUB_ENV
+          echo "ENVIRONMENT=production" >> $GITHUB_ENV
         elif [[ ${{ github.ref }} == 'refs/heads/develop' ]]; then
-          echo "ENV_NAME=tkxeldev" >> $GITHUB_ENV
+          echo "ENVIRONMENT=development" >> $GITHUB_ENV
         elif [[ ${{ github.ref }} == 'refs/heads/staging' ]]; then
-          echo "ENV_NAME=tkxelstaging" >> $GITHUB_ENV
-        elif [[ ${{ github.ref }} == 'refs/heads/qa' ]]; then
-          echo "ENV_NAME=tkxelqa" >> $GITHUB_ENV
+          echo "ENVIRONMENT=staging" >> $GITHUB_ENV
         else
-          echo "ENV_NAME=tkxelunknown" >> $GITHUB_ENV
+          echo "ENVIRONMENT=unknown" >> $GITHUB_ENV
         fi
 
     - name: Create config.json
@@ -43,39 +40,30 @@ jobs:
         STAGING_MAP_LICENSE: ${{ secrets.STAGING_MAP_LICENSE }}
         STAGING_MAP_KEY: ${{ secrets.STAGING_MAP_KEY }}
         STAGING_BASE_URL: ${{ secrets.STAGING_BASE_URL }}
-        QA_HOST_NAME: ${{ secrets.QA_HOST_NAME }}
-        QA_MAP_LICENSE: ${{ secrets.QA_MAP_LICENSE }}
-        QA_MAP_KEY: ${{ secrets.QA_MAP_KEY }}
-        QA_BASE_URL: ${{ secrets.QA_BASE_URL }}
       run: |
-        if [[ ${{ github.ref }} == 'refs/heads/main' ]]; then
+        if [[ $ENVIRONMENT == 'production' ]]; then
           HOST_NAME=$PROD_HOST_NAME
           MAP_LICENSE=$PROD_MAP_LICENSE
           MAP_KEY=$PROD_MAP_KEY
           BASE_URL=$PROD_BASE_URL
-        elif [[ ${{ github.ref }} == 'refs/heads/develop' ]]; then
+        elif [[ $ENVIRONMENT == 'development' ]]; then
           HOST_NAME=$DEV_HOST_NAME
           MAP_LICENSE=$DEV_MAP_LICENSE
           MAP_KEY=$DEV_MAP_KEY
           BASE_URL=$DEV_BASE_URL
-        elif [[ ${{ github.ref }} == 'refs/heads/staging' ]]; then
+        elif [[ $ENVIRONMENT == 'staging' ]]; then
           HOST_NAME=$STAGING_HOST_NAME
           MAP_LICENSE=$STAGING_MAP_LICENSE
           MAP_KEY=$STAGING_MAP_KEY
           BASE_URL=$STAGING_BASE_URL
-        elif [[ ${{ github.ref }} == 'refs/heads/qa' ]]; then
-          HOST_NAME=$QA_HOST_NAME
-          MAP_LICENSE=$QA_MAP_LICENSE
-          MAP_KEY=$QA_MAP_KEY
-          BASE_URL=$QA_BASE_URL
         else
-          echo "Unknown branch"
+          echo "Unknown environment"
           exit 1
         fi
 
         cat << EOF > config.json
         {
-          "$ENV_NAME": {
+          "tkxeldev": {
             "host_name": "$HOST_NAME",
             "map_license": "$MAP_LICENSE",
             "map_key": "$MAP_KEY",
